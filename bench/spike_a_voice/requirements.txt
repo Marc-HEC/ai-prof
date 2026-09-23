@@ -1,0 +1,19 @@
+# Essai A - clonage vocal francais
+#
+# A installer sur le pod GPU, pas sur le laptop.
+# torch est deja fourni par l'image de base CUDA (voir infra/Dockerfile.bench).
+
+# Metriques
+speechbrain>=1.0            # embeddings locuteur ECAPA-TDNN
+faster-whisper>=1.1         # re-transcription pour le WER francais
+jiwer>=3.0                  # calcul du WER
+numpy>=1.26
+
+# Moteurs candidats. Les installer separement plutot qu'en bloc : leurs
+# contraintes de version sur torch/transformers entrent regulierement en
+# conflit. Voir bench/README.md pour la procedure par environnement isole.
+#
+# chatterbox-tts>=0.1.4     # Chatterbox Multilingual v3
+# qwen-tts                  # Qwen3-TTS Base
+# requests>=2.31            # client HTTP pour GPT-SoVITS (temoin)
+requests>=2.31

@@ -1,0 +1,44 @@
+# Donnees vocales : biometrie. Ne quitte jamais la machine.
+# Ignorer le contenu, pas le dossier : sinon Git ne voit pas le README.
+voices/*
+!voices/README.md
+
+# Historique de conversation et memoire : le plus sensible du projet.
+data/
+*.sqlite
+*.sqlite3
+
+# Secrets
+infra/.env
+*.pem
+*.key
+!**/public*.key
+
+# Resultats de mesure : contiennent des chemins locaux et de l'audio synthetise
+bench/*/results/
+docs/decisions/stack.md
+
+# Modeles et assets lourds
+models/**/*.gguf
+models/**/*.safetensors
+models/**/*.ckpt
+models/**/*.pth
+avatars/**/*.vrm
+avatars/**/*.glb
+avatars/**/*.fbx
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Systeme
+.DS_Store
+Thumbs.db

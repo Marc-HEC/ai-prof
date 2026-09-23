@@ -1,0 +1,24 @@
+# Cas difficiles : chiffres, dates, sigles, anglicismes, ponctuation expressive.
+#
+# Ces phrases ne sont PAS scorees en WER (la normalisation des nombres fausserait
+# la mesure). Elles sont synthetisees puis ecoutees, et servent a reperer les
+# defauts que le WER ne voit pas : chiffre lu en anglais, date mal decoupee,
+# sigle epelé au lieu d'etre prononce, intonation de question absente.
+#
+# C'est typiquement ici qu'un frontend G2P inadapte se trahit.
+
+Le rendez-vous est confirme pour le 3 fevrier 2027 a 9 h 45.
+Il reste 1 842 euros sur le compte, pas un centime de plus.
+Mon numero c'est le 07 89 12 34 56, appelle quand tu veux.
+La SNCF annonce un retard de 25 minutes sur la ligne C.
+Le fichier PDF fait 14,8 Mo et le ZIP en fait 3.
+On se retrouve au 21 bis rue du Faubourg-Saint-Antoine.
+Tu viens ou pas ? Decide-toi, le train part dans dix minutes !
+Attends... tu es en train de me dire que c'est toi qui as fait ca ?
+Le taux est passe de 2,5 % a 4,75 % en moins d'un an.
+Il travaille chez IBM depuis 2019, apres cinq ans a la NASA.
+C'est un week-end tranquille, on va juste chiller a la maison.
+Non, non, non ! Ce n'est pas du tout ce que j'avais demande.
+Elle est nee le 1er aout 1998 a Aix-en-Provence.
+Le score final etait de 3 a 2 apres les prolongations.
+Oh la la, mais quelle idee, franchement...

@@ -1,0 +1,33 @@
+# Phrases de test pour le WER de l'essai A.
+#
+# Regle : aucune de ces phrases ne figure dans tools/record_script_fr.md.
+# Mesurer sur le texte d'entrainement mesurerait la memorisation, pas la
+# generalisation.
+#
+# Regle : pas de chiffres ni d'abreviations ici. Le WER compare la transcription
+# de la synthese au texte source ; une normalisation des nombres introduirait un
+# bruit de mesure qui n'a rien a voir avec la qualite du TTS. Les cas difficiles
+# sont dans fr_hard.txt, evalues a l'oreille.
+#
+# Les lignes vides et celles commencant par # sont ignorees.
+
+Le vent se leve sur la falaise et emporte les cris des mouettes.
+Personne ne savait vraiment pourquoi la porte etait restee ouverte.
+Elle a range ses affaires dans un carton qu'elle a pousse sous le lit.
+Ce chemin descend vers une plage de galets que peu de gens connaissent.
+Il faudrait peut-etre arreter de repousser cette conversation indefiniment.
+Les enfants ont construit une cabane avec des planches trouvees derriere la grange.
+Mon frere prefere travailler la nuit, quand le telephone ne sonne plus.
+Cette histoire ancienne revient toujours au meme moment de l'annee.
+Un chien aboyait quelque part, tres loin, de l'autre cote du champ.
+Je crois que nous avons oublie l'essentiel dans toute cette affaire.
+Le boulanger ouvre a cinq heures et ferme quand il n'a plus rien a vendre.
+Tu aurais du me prevenir avant de prendre une decision pareille.
+La neige a recouvert le jardin pendant la nuit sans que personne l'entende.
+Il regardait par la fenetre en pensant a tout autre chose.
+Cette machine fonctionne encore, mais plus personne ne sait la reparer.
+Nous sommes arrives trop tard pour voir le soleil disparaitre derriere les arbres.
+Elle chantonnait un air que sa mere lui avait appris quand elle etait petite.
+Le silence qui a suivi sa reponse etait franchement insupportable.
+Quelqu'un avait laisse un mot sur la table de la cuisine, sans signature.
+Je ne comprends toujours pas comment tu as pu accepter une chose pareille.

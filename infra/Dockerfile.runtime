@@ -1,0 +1,33 @@
+# Image d'execution : boucle conversationnelle temps reel (essai B, puis production).
+#
+# Contient Pipecat, le VAD, la detection de fin de tour, le STT et le moteur TTS
+# retenu a l'issue de l'essai A. Le LLM tourne dans un conteneur separe (Ollama
+# ou vLLM), pour pouvoir etre remplace sans reconstruire cette image.
+
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    HF_HOME=/workspace/.cache/huggingface
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ffmpeg git curl ca-certificates libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+COPY bench/spike_b_latency/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Moteur TTS retenu a l'essai A. Surcharger a la construction :
+#   docker build --build-arg TTS_PACKAGE=qwen-tts ...
+ARG TTS_PACKAGE=chatterbox-tts
+RUN pip install --no-cache-dir "${TTS_PACKAGE}"
+
+COPY bench /workspace/bench
+COPY backend /workspace/backend
+
+EXPOSE 7860
+WORKDIR /workspace/bench/spike_b_latency
+CMD ["python", "bot.py"]

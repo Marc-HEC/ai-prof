@@ -1,0 +1,11 @@
+# Essai B - latence de la boucle conversationnelle
+#
+# Pipecat apporte les briques que le cahier des charges initial avait oubliees :
+# VAD, detection de fin de tour, interruption, transport WebRTC.
+
+pipecat-ai[silero,webrtc,whisper,ollama]>=0.0.60
+faster-whisper>=1.1
+numpy>=1.26
+
+# Analyse des traces
+tabulate>=0.9

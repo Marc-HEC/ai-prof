@@ -1,0 +1,106 @@
+# Services du pod GPU.
+#
+# Regle de securite structurante : AUCUN port n'est publie sur l'interface
+# publique. Tous les `ports` sont lies a 127.0.0.1. L'acces depuis le laptop
+# passe exclusivement par Tailscale (voir infra/provision.sh), qui expose les
+# services sur l'adresse privee du tailnet.
+#
+# Regle de confidentialite : le pod ne monte jamais l'historique de conversation
+# ni la memoire vectorielle. Seul `voices/` est monte, en lecture seule, et
+# uniquement pendant l'essai A.
+
+name: aigf
+
+services:
+  # --- Essai A : banc d'essai du clonage vocal ---------------------------
+  bench:
+    profiles: ["spike-a"]
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.bench
+    volumes:
+      # Lecture seule : c'est une donnee biometrique, le calcul n'a pas a la
+      # modifier. Le banc ecrit ses caches dans le dossier de resultats.
+      - ../voices:/workspace/voices:ro
+      - ../bench/spike_a_voice/results:/workspace/bench/spike_a_voice/results
+      - hf-cache:/workspace/.cache
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+      # Nom de service, pas la boucle locale : depuis ce conteneur, 127.0.0.1
+      # designerait le conteneur du banc lui-meme.
+      - GPTSOVITS_URL=http://gptsovits:9880
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, count: 1, capabilities: [gpu] }]
+    # Le banc est un job, pas un service : il tourne et se termine.
+    command: >
+      python run_bench.py
+      --dataset /workspace/voices/${PERSONA:-default}/dataset
+      --engines chatterbox-multilingual-v3 qwen3-tts-base
+      --out results/${RUN_ID:-latest}
+
+  # Temoin de l'essai A, isole dans son propre conteneur pour cause de
+  # dependances incompatibles avec les candidats.
+  gptsovits:
+    profiles: ["spike-a-control"]
+    image: ${GPTSOVITS_IMAGE:-xxxxrt666/gpt-sovits:latest}
+    volumes:
+      - ../voices:/workspace/voices:ro
+      - gptsovits-models:/workspace/GPT_SoVITS/pretrained_models
+    ports:
+      - "127.0.0.1:9880:9880"
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, count: 1, capabilities: [gpu] }]
+    command: python api_v2.py -a 0.0.0.0 -p 9880 -c GPT_SoVITS/configs/tts_infer.yaml
+
+  # --- Essai B et production : boucle conversationnelle ------------------
+  llm:
+    profiles: ["spike-b", "runtime"]
+    image: ollama/ollama:latest
+    volumes:
+      - ollama-models:/root/.ollama
+    ports:
+      - "127.0.0.1:11434:11434"
+    environment:
+      # Garde le modele charge : un rechargement a chaque tour ajouterait
+      # plusieurs secondes a la latence du premier token.
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_NUM_PARALLEL=1
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, count: 1, capabilities: [gpu] }]
+
+  voice:
+    profiles: ["spike-b", "runtime"]
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.runtime
+      args:
+        TTS_PACKAGE: ${TTS_PACKAGE:-chatterbox-tts}
+    depends_on: [llm]
+    volumes:
+      - ../voices:/workspace/voices:ro
+      - ../bench/spike_b_latency/results:/workspace/bench/spike_b_latency/results
+      - hf-cache:/workspace/.cache
+    ports:
+      # Signalisation WebRTC. Le media passe en direct par ICE une fois la
+      # negociation faite ; ce port ne sert qu'a l'etablissement.
+      - "127.0.0.1:7860:7860"
+    environment:
+      - OLLAMA_BASE_URL=http://llm:11434
+      - LLM_MODEL=${LLM_MODEL:-hermes3:8b}
+      - PERSONA=${PERSONA:-default}
+      - WHISPER_MODEL=${WHISPER_MODEL:-large-v3}
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, count: 1, capabilities: [gpu] }]
+
+volumes:
+  hf-cache:
+  ollama-models:
+  gptsovits-models:

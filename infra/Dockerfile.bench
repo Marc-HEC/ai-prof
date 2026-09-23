@@ -1,0 +1,42 @@
+# Image de l'essai A : clonage vocal francais.
+#
+# Contient les metriques (ECAPA-TDNN, faster-whisper, jiwer) et les deux moteurs
+# candidats. GPT-SoVITS n'est PAS dans cette image : il tourne dans son propre
+# conteneur et se pilote en HTTP, ce qui evite le conflit de versions
+# transformers/torch avec les candidats.
+
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    HF_HOME=/workspace/.cache/huggingface \
+    TORCH_HOME=/workspace/.cache/torch
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ffmpeg git curl ca-certificates libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+COPY bench/spike_a_voice/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt \
+    && pip install --no-cache-dir soundfile scipy
+
+# Moteurs candidats. Installes apres les metriques pour que leurs contraintes de
+# version ne retrogradent pas torch de l'image de base.
+RUN pip install --no-cache-dir chatterbox-tts || \
+    echo "ATTENTION: chatterbox-tts non installe, ce moteur sera absent du banc"
+RUN pip install --no-cache-dir qwen-tts || \
+    echo "ATTENTION: qwen-tts non installe, ce moteur sera absent du banc"
+
+# flash-attn n'est volontairement pas installe. Il exige nvcc pour se compiler,
+# absent des images CUDA `runtime`, et passer a une image `devel` ajouterait
+# plusieurs gigaoctets pour un gain marginal sur des enonces courts. Les moteurs
+# utilisent `sdpa`, qui est inclus dans PyTorch.
+
+COPY bench /workspace/bench
+COPY tools /workspace/tools
+
+WORKDIR /workspace/bench/spike_a_voice
+CMD ["python", "run_bench.py", "--list"]

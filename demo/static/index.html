@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Prof, démo</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Rendu des formules et du Markdown au tableau. Facultatifs : repli texte brut. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" crossorigin="anonymous"></script>
+  <!-- Silero VAD dans le navigateur. Facultatif : repli sur un VAD d'energie. -->
+  <script defer src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/ort.wasm.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.31/dist/bundle.min.js" crossorigin="anonymous"></script>
+  <!-- Avatar VRM. Facultatif : repli sur un visage 2D. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+        "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3/lib/three-vrm.module.min.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="dot" id="liveDot"></span> AI Prof <small>démo sans GPU</small></div>
+    <div class="pills" id="pills"></div>
+    <label class="persona">Persona
+      <select id="persona"></select>
+    </label>
+  </header>
+
+  <main class="layout">
+    <section class="call">
+      <div class="avatar-wrap">
+        <div id="avatar" class="avatar"></div>
+        <div class="avatar-status" id="avatarStatus"></div>
+        <div class="caption" id="caption" aria-live="polite"></div>
+        <button class="ghost framing" id="framing" title="Buste / plein pied">Cadrage</button>
+      </div>
+
+      <div class="controls">
+        <button id="mic" class="primary" aria-pressed="false">Activer le micro</button>
+        <button id="stop" class="ghost" disabled>Couper</button>
+        <label class="toggle" title="Parler pendant que le prof parle l'interrompt. Mieux avec un casque.">
+          <input type="checkbox" id="bargein" checked> Interruption vocale
+        </label>
+        <span class="listen" id="listen"></span>
+      </div>
+
+      <div class="chat" id="chat"></div>
+
+      <form class="composer" id="composer">
+        <label class="attach ghost" title="Ajouter un cours : PDF, texte, photo">
+          <input type="file" id="file" accept=".pdf,.txt,.md,.tex,.png,.jpg,.jpeg,.webp" hidden>
+          Cours
+        </label>
+        <input id="text" autocomplete="off" placeholder="Écris ici, ou parle quand le micro est activé">
+        <button class="primary" type="submit">Envoyer</button>
+      </form>
+      <div class="materials" id="materials"></div>
+      <div class="timing" id="timing"></div>
+    </section>
+
+    <section class="board">
+      <div class="board-bar">
+        <strong>Tableau</strong>
+        <div class="tools">
+          <button class="tool" data-tool="none" aria-pressed="true">Lire</button>
+          <button class="tool" data-tool="pen" aria-pressed="false">Stylo</button>
+          <button class="tool" data-tool="eraser" aria-pressed="false">Gomme</button>
+          <button class="ghost" id="clearDrawing">Effacer le dessin</button>
+          <button class="primary" id="showBoard" title="Envoie ton dessin au prof avec ta prochaine question">Montrer au prof</button>
+          <button class="ghost" id="clearBoard">Nettoyer</button>
+        </div>
+      </div>
+      <div class="board-surface" id="boardSurface" data-tool="none">
+        <div class="board-content" id="boardContent"></div>
+        <canvas class="draw-layer" id="drawLayer"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

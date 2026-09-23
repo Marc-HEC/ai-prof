@@ -10,6 +10,7 @@ data/
 
 # Secrets
 infra/.env
+demo/.env
 *.pem
 *.key
 !**/public*.key
@@ -23,6 +24,8 @@ models/**/*.gguf
 models/**/*.safetensors
 models/**/*.ckpt
 models/**/*.pth
+models/**/*.onnx
+models/**/*.onnx.json
 avatars/**/*.vrm
 avatars/**/*.glb
 avatars/**/*.fbx

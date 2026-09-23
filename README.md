@@ -16,10 +16,23 @@ les reduit :
 La suite ne demarre que si [`bench/decide.py`](bench/decide.py) donne un feu
 vert sur des seuils fixes a l'avance.
 
+## Demo sans GPU
+
+Une version jouable tourne des maintenant, sans GPU : avatar VRM avec lip-sync,
+voix, micro avec interruption, tableau avec formules. Les briques GPU y sont
+remplacees par des API gratuites ou des modeles CPU.
+
+```bash
+python demo/start.py          # ou --mock pour tester sans aucune cle
+```
+
+Details dans [demo/README.md](demo/README.md).
+
 ## Par ou commencer
 
 | Vous voulez | Lire |
 |---|---|
+| Lancer la demo sans GPU | [demo/README.md](demo/README.md) |
 | Comprendre le systeme cible | [docs/architecture.md](docs/architecture.md) |
 | Savoir pourquoi tel choix | [docs/decisions.md](docs/decisions.md) |
 | Enregistrer la voix | [tools/record_script_fr.md](tools/record_script_fr.md) |

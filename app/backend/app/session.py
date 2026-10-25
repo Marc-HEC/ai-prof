@@ -6,11 +6,13 @@ import json
 import logging
 import re
 import time
+from contextlib import aclosing
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Awaitable, Callable
 
 from . import services as default_services
+from . import teaching
 from .audio import SpeechSegmenter, pcm_to_wav
 from .config import Config
 from .memory import Memory
@@ -89,7 +91,7 @@ class Session:
             await self._write_journal((time.time() - last) / 3600)
         mem.set("last_seen", time.time())
         await self.send_json({"type": "state", "state": self.state(), "memoire": stats,
-                              "name": self.d.persona.name})
+                              "name": self.d.persona.name, "persona": self.d.persona.public()})
 
     async def close(self) -> None:
         await self.interrupt(notify=False)
@@ -138,6 +140,10 @@ class Session:
         self.turn = asyncio.create_task(self._respond(text, images or []))
 
     @property
+    def search_enabled(self) -> bool:
+        return "recherche_web" in self.d.persona.outils and self.d.cfg.recherche_web.enabled
+
+    @property
     def responding(self) -> bool:
         return self.turn is not None and not self.turn.done()
 
@@ -157,7 +163,8 @@ class Session:
         last_reply = next((m["content"] for m in reversed(self.history) if m["role"] == "assistant"), "")
         system = build_system_prompt(
             p, self.state(), mem.recall(f"{text} {last_reply}"), mem.facts(),
-            self.journal, datetime.now(), self.prev_seen)
+            self.journal, datetime.now(), self.prev_seen,
+            teaching.tools_prompt(p.outils, self.search_enabled))
         content: str | list = text
         if images:
             content = [{"type": "text", "text": text}] + [
@@ -171,14 +178,25 @@ class Session:
         raw, spoken = "", []
         queue: asyncio.Queue[str | None] = asyncio.Queue()
         tts = asyncio.create_task(self._speak(queue))
-        buf = SentenceBuffer()
         try:
-            async for token in self.svc.stream_chat(messages, self.d.cfg.llm):
-                raw += token
-                for sentence in buf.push(token):
+            # Deux passes au plus : la réponse, puis sa suite si le prof a demandé
+            # une recherche web au milieu.
+            for attempt in range(2):
+                buf, blocks, query = SentenceBuffer(), teaching.BlockParser(), None
+                async with aclosing(self.svc.stream_chat(messages, self.d.cfg.llm)) as stream:
+                    async for token in stream:
+                        raw += token
+                        query = await self._feed(blocks.push(token), buf, queue, spoken, attempt)
+                        if query:
+                            break
+                if query is None:
+                    query = await self._feed(blocks.flush(), buf, queue, spoken, attempt)
+                for sentence in buf.flush():
                     await self._emit(sentence, queue, spoken)
-            for sentence in buf.flush():
-                await self._emit(sentence, queue, spoken)
+                if query is None:
+                    break
+                messages = [*messages, {"role": "assistant", "content": raw},
+                            {"role": "user", "content": await self._research(query)}]
             await queue.put(None)
             await tts
         except asyncio.CancelledError:
@@ -189,7 +207,7 @@ class Session:
             tts.cancel()
             await self.send_json({"type": "error", "message": f"Réponse impossible : {e}"})
         finally:
-            clean, _ = extract_tags(raw)
+            clean = " ".join(spoken)
             if clean:
                 self.history.append({"role": "assistant", "content": raw})
                 self.transcript.append(f"{self.d.persona.name}: {clean}")
@@ -197,6 +215,38 @@ class Session:
             self.turns_since_reflect += 1
             if self.turns_since_reflect >= self.d.cfg.memory.reflect_every_turns:
                 self._spawn(self.reflect())
+
+    async def _feed(self, segments: list[tuple[str, str]], buf: SentenceBuffer, queue: asyncio.Queue,
+                    spoken: list[str], attempt: int) -> str | None:
+        """Route les morceaux du flux : texte vers la voix, blocs vers le tableau ou la recherche.
+
+        Retourne la question à chercher quand le prof en a écrit une.
+        """
+        for kind, content in segments:
+            if kind == "text":
+                for sentence in buf.push(content):
+                    await self._emit(sentence, queue, spoken)
+            elif kind == "tableau" and "tableau" in self.d.persona.outils:
+                event = teaching.board_event(content)
+                if event:
+                    await self.send_json(event)
+                    self.transcript.append(f"{self.d.persona.name} écrit au tableau : {content[:200]}")
+            elif kind == "recherche" and self.search_enabled and attempt == 0 and content.strip():
+                return content.strip()[:200]
+        return None
+
+    async def _research(self, query: str) -> str:
+        await self.send_json({"type": "search", "query": query})
+        try:
+            sources = await self.svc.web_search(query, self.d.cfg.recherche_web)
+        except Exception as e:  # réseau, moteur qui bloque : le prof continue sans
+            log.warning("recherche impossible: %s", e)
+            return teaching.RESEARCH_UNAVAILABLE.format(query=query, reason="recherche indisponible")
+        if not sources:
+            return teaching.RESEARCH_UNAVAILABLE.format(query=query, reason="aucun résultat")
+        await self.send_json({"type": "sources", "query": query,
+                              "items": [{"titre": s["titre"], "url": s["url"]} for s in sources]})
+        return teaching.RESEARCH_FOLLOWUP.format(query=query, sources=teaching.format_sources(sources))
 
     async def _emit(self, sentence: str, queue: asyncio.Queue, spoken: list[str]) -> None:
         clean, tags = extract_tags(sentence)

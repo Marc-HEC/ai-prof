@@ -55,6 +55,18 @@ class MemoryConfig:
 
 
 @dataclass
+class WebSearchConfig:
+    # Désactivée par défaut : la question part chez DuckDuckGo et ton PC visite
+    # les pages trouvées. À activer seulement pour une persona qui en a besoin.
+    enabled: bool = False
+    region: str = "fr-fr"
+    max_results: int = 5
+    pages: int = 3                   # pages lues en entier
+    excerpt_chars: int = 1500
+    timeout_s: float = 4.0
+
+
+@dataclass
 class ServerConfig:
     host: str = "127.0.0.1"
     port: int = 8765
@@ -68,6 +80,7 @@ class Config:
     vad: VADConfig = field(default_factory=VADConfig)
     memory: MemoryConfig = field(default_factory=MemoryConfig)
     server: ServerConfig = field(default_factory=ServerConfig)
+    recherche_web: WebSearchConfig = field(default_factory=WebSearchConfig)
     persona: str = "persona/exemple.yaml"
 
 
@@ -89,6 +102,7 @@ def load_config(path: str | Path | None = None) -> Config:
         vad=_section(VADConfig, raw.get("vad")),
         memory=_section(MemoryConfig, raw.get("memory")),
         server=_section(ServerConfig, raw.get("server")),
+        recherche_web=_section(WebSearchConfig, raw.get("recherche_web")),
         persona=raw.get("persona", "persona/exemple.yaml"),
     )
 

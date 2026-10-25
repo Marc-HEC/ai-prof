@@ -28,9 +28,11 @@ registerProcessor("capture", Capture);
 export class Microphone {
   constructor(onFrame) { this.onFrame = onFrame; this.active = false; }
 
-  async start() {
+  // deviceId : un micro précis, par exemple la sortie de VoiceMeeter pendant un cours sur Teams.
+  async start(deviceId) {
     this.stream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1,
+               ...(deviceId ? { deviceId: { exact: deviceId } } : {}) },
     });
     this.ctx = new AudioContext();
     const url = URL.createObjectURL(new Blob([WORKLET], { type: "application/javascript" }));
@@ -136,4 +138,10 @@ export async function imageToDataUrl(file, max = 1024) {
   canvas.height = Math.round(img.height * scale);
   canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
   return canvas.toDataURL("image/jpeg", 0.85);
+}
+
+// Liste des micros. Les noms ne sont visibles qu'une fois l'accès au micro accordé.
+export async function listMicrophones() {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  return devices.filter((d) => d.kind === "audioinput" && d.deviceId);
 }

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 
-TAG_RE = re.compile(r"\[(action|emotion|camera)\s*:\s*([\w\-éèàç]+)\]", re.IGNORECASE)
+TAG_RE = re.compile(r"\[(action|emotion|camera|tableau)\s*:\s*([\w\-éèàç]+)\]", re.IGNORECASE)
 ASTERISK_RE = re.compile(r"\*[^*]{0,200}\*")
 SENTENCE_END = re.compile(r"([.!?…]+)(\s+|$)")
 

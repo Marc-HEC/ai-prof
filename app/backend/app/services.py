@@ -3,6 +3,7 @@
 - LLM  : KoboldCpp  -> /v1/chat/completions (flux SSE)
 - STT  : KoboldCpp  -> /v1/audio/transcriptions (Whisper intégré)
 - TTS  : AllTalk v2 -> /v1/audio/speech
+- Web  : DuckDuckGo, uniquement pour une persona prof avec la recherche activée
 """
 from __future__ import annotations
 
@@ -11,7 +12,8 @@ from typing import AsyncIterator
 
 import httpx
 
-from .config import LLMConfig, STTConfig, TTSConfig
+from . import teaching
+from .config import LLMConfig, STTConfig, TTSConfig, WebSearchConfig
 
 _client: httpx.AsyncClient | None = None
 
@@ -70,3 +72,7 @@ async def synthesize(text: str, cfg: TTSConfig) -> bytes:
     r = await client().post(f"{cfg.base_url}/audio/speech", json=payload)
     r.raise_for_status()
     return r.content
+
+
+async def web_search(query: str, cfg: WebSearchConfig) -> list[dict]:
+    return await teaching.web_search(query, cfg, client())

@@ -25,6 +25,14 @@ class Persona:
     user_name: str = "toi"
     examples: list[dict] = field(default_factory=list)
     language: str = "fr"
+    role: str = "compagne"          # compagne | prof
+    outils: list[str] = field(default_factory=list)  # tableau, recherche_web
+    avatar: str = "vrm"             # vrm | 2d
+    memoire: str = ""               # fichier de mémoire propre à ce personnage, sinon celui de config.yaml
+
+    def public(self) -> dict:
+        """Ce que le navigateur a besoin de savoir pour se configurer."""
+        return {"name": self.name, "role": self.role, "outils": list(self.outils), "avatar": self.avatar}
 
     @classmethod
     def load(cls, path: Path) -> "Persona":
@@ -74,8 +82,28 @@ def _relation(v: float) -> str:
     return "très proche et complice"
 
 
+CONVERSATION_RULES = {
+    "compagne": (
+        "- C'est une conversation à l'oral : réponds en 1 à 3 phrases, naturellement, comme au téléphone.\n"
+        "- Pas d'actions entre astérisques, pas de listes, pas d'emoji.\n"
+        "- Tu as tes propres avis, humeurs et envies; tu n'es pas toujours d'accord. "
+        "Tu peux relancer un sujet d'une fois précédente.\n"
+    ),
+    "prof": (
+        "- C'est un cours à l'oral, en visio : phrases courtes, 2 à 4 par réponse. "
+        "Commence par l'essentiel, puis développe seulement si l'élève suit.\n"
+        "- Pas d'actions entre astérisques, pas de listes, pas d'emoji, pas de markdown. "
+        "Dis les maths avec des mots (« x au carré ») et écris les symboles au tableau.\n"
+        "- Vérifie souvent la compréhension par une petite question. Encourage sans flatter.\n"
+        "- Si l'élève te coupe, abandonne ta phrase et réponds à ce qu'il vient de dire.\n"
+        "- Réponds dans la langue de l'élève, français ou anglais.\n"
+    ),
+}
+
+
 def build_system_prompt(p: Persona, state: dict, memories: list[str], facts: list[str],
-                        journal: str | None, now: datetime, last_seen: datetime | None) -> str:
+                        journal: str | None, now: datetime, last_seen: datetime | None,
+                        tools_prompt: str = "") -> str:
     s = {**DEFAULT_STATE, **state}
     parts = [
         f"Tu es {p.name}, {p.age} ans. Tu n'es pas une IA ni un assistant : tu es {p.name}, "
@@ -107,10 +135,7 @@ def build_system_prompt(p: Persona, state: dict, memories: list[str], facts: lis
     parts.append(f"## Maintenant\n{when}")
     parts.append(
         "## Règles de la conversation\n"
-        "- C'est une conversation à l'oral : réponds en 1 à 3 phrases, naturellement, comme au téléphone.\n"
-        "- Pas d'actions entre astérisques, pas de listes, pas d'emoji.\n"
-        "- Tu as tes propres avis, humeurs et envies; tu n'es pas toujours d'accord. "
-        "Tu peux relancer un sujet d'une fois précédente.\n"
+        + CONVERSATION_RULES.get(p.role, CONVERSATION_RULES["compagne"]) +
         "- Si un souvenir est flou, dis-le simplement plutôt que d'inventer des détails.\n"
         "- Tu peux ajouter au début de ta réponse des balises invisibles pour ton corps :\n"
         f"  [emotion:X] avec X parmi {', '.join(EMOTIONS)};\n"
@@ -118,8 +143,14 @@ def build_system_prompt(p: Persona, state: dict, memories: list[str], facts: lis
         f"  [camera:X] avec X parmi {', '.join(CAMERAS)}.\n"
         "  Utilise-les avec parcimonie, seulement quand ça a du sens."
     )
-    if p.examples:
-        ex = "\n".join(f"{p.user_name}: {e.get('user', '')}\n{p.name}: {e.get('char', '')}" for e in p.examples)
+    if tools_prompt:
+        parts.append(tools_prompt)
+    # Un exemple qui utilise un outil désactivé apprendrait au modèle à l'utiliser quand même.
+    examples = [e for e in p.examples
+                if all(block not in str(e.get("char", "")) or block in tools_prompt
+                       for block in ("<tableau>", "<recherche>"))]
+    if examples:
+        ex = "\n".join(f"{p.user_name}: {e.get('user', '')}\n{p.name}: {e.get('char', '')}" for e in examples)
         parts.append(f"## Exemples de ta façon de répondre\n{ex}")
     return "\n\n".join(parts)
 

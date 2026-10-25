@@ -11,7 +11,8 @@
         "three": "./node_modules/three/build/three.module.js",
         "three/addons/": "./node_modules/three/examples/jsm/",
         "@pixiv/three-vrm": "./node_modules/@pixiv/three-vrm/lib/three-vrm.module.js",
-        "@pixiv/three-vrm-animation": "./node_modules/@pixiv/three-vrm-animation/lib/three-vrm-animation.module.js"
+        "@pixiv/three-vrm-animation": "./node_modules/@pixiv/three-vrm-animation/lib/three-vrm-animation.module.js",
+        "mermaid": "./node_modules/mermaid/dist/mermaid.esm.min.mjs"
       }
     }
   </script>
@@ -29,9 +30,20 @@
       </p>
       <div class="controls">
         <button id="mic" class="btn primary" aria-pressed="false">Activer le micro</button>
+        <label class="mic-device" title="Pour un cours sur Teams, choisis la sortie de VoiceMeeter">
+          <span class="sr-only">Micro</span>
+          <select id="mic-device"><option value="">Micro par défaut</option></select>
+        </label>
         <button id="stop" class="btn">Couper la parole</button>
         <button id="cam" class="btn">Plein pied</button>
+        <button id="visio" class="btn" hidden>Mode visio</button>
       </div>
+    </section>
+
+    <section id="board" class="board" hidden aria-label="Tableau blanc">
+      <div class="board-surface"></div>
+      <div class="board-sources" hidden></div>
+      <button class="board-clear btn" type="button">Effacer</button>
     </section>
 
     <aside class="chat">

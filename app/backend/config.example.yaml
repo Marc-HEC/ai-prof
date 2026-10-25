@@ -28,6 +28,11 @@ memory:
   half_life_days: 30
   journal_after_hours: 6
 
+recherche_web:             # seulement pour le prof (persona/prof.yaml)
+  enabled: false           # true = la question part chez DuckDuckGo et ton PC visite les pages trouvées
+  region: fr-fr
+  pages: 3
+
 server:
   host: 127.0.0.1          # ne mets jamais 0.0.0.0
   port: 8765

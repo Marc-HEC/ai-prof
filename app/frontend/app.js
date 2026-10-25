@@ -1,11 +1,19 @@
-// Relie l'avatar, l'audio et le chat au serveur local (WebSocket).
-import { Avatar } from "./avatar.js";
-import { Microphone, VoicePlayer, fileToPcmBase64, imageToDataUrl } from "./audio.js";
+// Relie l'avatar, l'audio, le chat et le tableau au serveur local (WebSocket).
+import { Microphone, VoicePlayer, fileToPcmBase64, imageToDataUrl, listMicrophones } from "./audio.js";
+import { Board } from "./board.js";
 
 const $ = (id) => document.getElementById(id);
+
+// La fiche choisie au lancement décide de l'avatar (VRM ou 2D) et des outils (tableau).
+const info = await fetch("/api/info").then((r) => r.json()).catch(() => ({ avatar: "vrm", outils: [] }));
+const { Avatar } = info.avatar === "2d" ? await import("./avatar2d.js") : await import("./avatar.js");
 const avatar = new Avatar($("scene"));
 window.avatar = avatar; // pratique pour tester dans la console
-let charName = "Elle";
+const board = new Board($("board"));
+let charName = info.name || "Elle";
+if (info.name) { $("name").textContent = info.name; document.title = info.name; }
+if (info.outils?.includes("tableau")) { board.show(); $("visio").hidden = false; }
+if (info.avatar === "2d") $("cam").hidden = true;
 let currentReply = null;
 
 const STATUS = { idle: "En ligne", listening: "T'écoute…", thinking: "Réfléchit…", speaking: "Parle", offline: "Hors ligne" };
@@ -16,7 +24,8 @@ function setStatus(state) {
 
 const player = new VoicePlayer((lvl) => avatar.setMouth(lvl), () => setStatus("idle"));
 
-avatar.load("avatar/model.vrm").catch(() => { $("avatar-missing").hidden = false; });
+if (info.avatar === "2d") avatar.load("avatar/2d/");
+else avatar.load("avatar/model.vrm").catch(() => { $("avatar-missing").hidden = false; });
 
 // --- chat ---------------------------------------------------------------------
 function addMessage(kind, who, text, image) {
@@ -78,6 +87,12 @@ function handle(m) {
       if (m.kind === "emotion") avatar.setEmotion(m.value);
       if (m.kind === "action") avatar.play(m.value);
       if (m.kind === "camera") setCamera(m.value);
+      if (m.kind === "tableau" && m.value === "effacer") board.clear();
+      break;
+    case "board":
+    case "search":
+    case "sources":
+      board.handle(m);
       break;
     case "assistant_delta":
       if (!currentReply) currentReply = addMessage("assistant", charName, "");
@@ -108,10 +123,32 @@ $("mic").onclick = async () => {
   if (mic.active) {
     mic.stop();
   } else {
-    try { await mic.start(); } catch (e) { addMessage("system", null, `Micro indisponible : ${e.message}`); }
+    try {
+      await mic.start($("mic-device").value || undefined);
+      await fillMicList();
+    } catch (e) { addMessage("system", null, `Micro indisponible : ${e.message}`); }
   }
   $("mic").setAttribute("aria-pressed", String(mic.active));
   $("mic").textContent = mic.active ? "Couper le micro" : "Activer le micro";
+};
+
+async function fillMicList() {
+  const select = $("mic-device"), current = select.value;
+  const mics = await listMicrophones();
+  select.replaceChildren(new Option("Micro par défaut", ""), ...mics.map((d) => new Option(d.label || "Micro", d.deviceId)));
+  select.value = mics.some((d) => d.deviceId === current) ? current : "";
+}
+$("mic-device").onchange = async () => {
+  if (!mic.active) return;
+  mic.stop();
+  try { await mic.start($("mic-device").value || undefined); }
+  catch (e) { addMessage("system", null, `Micro indisponible : ${e.message}`); }
+};
+
+// Mode visio : avatar et tableau seuls à l'écran, pour partager la fenêtre dans Teams.
+$("visio").onclick = () => {
+  const on = document.body.classList.toggle("visio");
+  $("visio").textContent = on ? "Quitter le mode visio" : "Mode visio";
 };
 
 $("stop").onclick = () => { player.stop(); send({ type: "interrupt" }); };

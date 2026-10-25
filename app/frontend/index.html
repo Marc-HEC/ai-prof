@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compagne</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./node_modules/three/build/three.module.js",
+        "three/addons/": "./node_modules/three/examples/jsm/",
+        "@pixiv/three-vrm": "./node_modules/@pixiv/three-vrm/lib/three-vrm.module.js",
+        "@pixiv/three-vrm-animation": "./node_modules/@pixiv/three-vrm-animation/lib/three-vrm-animation.module.js",
+        "mermaid": "./node_modules/mermaid/dist/mermaid.esm.min.mjs"
+      }
+    }
+  </script>
+</head>
+<body>
+  <main class="layout">
+    <section class="stage">
+      <canvas id="scene"></canvas>
+      <div class="hud">
+        <span id="status" class="status" data-state="idle">Hors ligne</span>
+        <span id="mood" class="mood"></span>
+      </div>
+      <p id="avatar-missing" class="avatar-missing" hidden>
+        Dépose ton avatar dans <code>frontend/avatar/model.vrm</code> puis recharge la page.
+      </p>
+      <div class="controls">
+        <button id="mic" class="btn primary" aria-pressed="false">Activer le micro</button>
+        <label class="mic-device" title="Pour un cours sur Teams, choisis la sortie de VoiceMeeter">
+          <span class="sr-only">Micro</span>
+          <select id="mic-device"><option value="">Micro par défaut</option></select>
+        </label>
+        <button id="stop" class="btn">Couper la parole</button>
+        <button id="cam" class="btn">Plein pied</button>
+        <button id="visio" class="btn" hidden>Mode visio</button>
+      </div>
+    </section>
+
+    <section id="board" class="board" hidden aria-label="Tableau blanc">
+      <div class="board-surface"></div>
+      <div class="board-sources" hidden></div>
+      <button class="board-clear btn" type="button">Effacer</button>
+    </section>
+
+    <aside class="chat">
+      <header class="chat-head">
+        <strong id="name">Chat</strong>
+        <span class="private">local</span>
+      </header>
+      <ol id="messages" class="messages" aria-live="polite"></ol>
+      <form id="composer" class="composer">
+        <label class="attach" title="Envoyer une image">
+          <input id="image-input" type="file" accept="image/*" hidden>
+          Image
+        </label>
+        <label class="attach" title="Envoyer un message vocal">
+          <input id="audio-input" type="file" accept="audio/*" hidden>
+          Vocal
+        </label>
+        <input id="text" type="text" autocomplete="off" placeholder="Écris un message…">
+        <button class="btn primary" type="submit">Envoyer</button>
+      </form>
+    </aside>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

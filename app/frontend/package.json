@@ -1,0 +1,11 @@
+{
+  "name": "compagne-frontend",
+  "private": true,
+  "description": "Librairies de l'avatar, installées en local pour fonctionner hors ligne.",
+  "dependencies": {
+    "three": "0.169.0",
+    "@pixiv/three-vrm": "3.4.0",
+    "@pixiv/three-vrm-animation": "3.4.0",
+    "mermaid": "11.4.1"
+  }
+}

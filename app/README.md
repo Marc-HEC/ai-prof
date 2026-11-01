@@ -63,7 +63,12 @@ Puis **http://127.0.0.1:8765**. L'écran passe en trois colonnes : l'avatar, le 
 
 - **Tableau blanc.** Le prof écrit des blocs `<tableau>…</tableau>` dans sa réponse. Ils ne sont jamais lus à voix haute : des lignes de texte ou de formules apparaissent au feutre, et un bloc qui commence par `flowchart` devient un schéma Mermaid au trait. `[tableau:effacer]` efface. Il n'y a pas d'appel de fonctions : KoboldCpp les gère mal, alors que les balises marchent avec n'importe quel modèle.
 - **Recherche web.** Quand il écrit `<recherche>question</recherche>`, il s'arrête après « je regarde ça », l'app cherche sur DuckDuckGo et lit les trois premières pages, puis il termine sa réponse avec les sources, affichées sous le tableau. **Désactivée par défaut** : mets `recherche_web.enabled: true` dans `config.yaml`. À ce moment-là, la question part chez DuckDuckGo et ton PC visite les pages trouvées, avec ton adresse IP. C'est la seule sortie vers un tiers de toute l'app.
-- **Avatar 2D anime.** Dépose dans `frontend/avatar/2d/` des PNG de même taille, fond transparent : `base.png` (bouche fermée), `bouche_0.png` à `bouche_3.png` (de fermée à grande ouverte), `yeux_fermes.png`, et si tu veux `emotion_joie.png`, `emotion_surprise.png`… (yeux et sourcils par-dessus la base). La bouche suit le volume de la voix, les yeux clignent, la tête bouge un peu. Sans ces fichiers, un visage provisoire est dessiné. Pour faire les calques : une illustration à toi découpée dans Krita (gratuit), exportée calque par calque sur le même canevas.
+- **Avatar 2D anime.** Trois niveaux, choisis tout seuls selon ce que tu as déposé :
+  1. **Modèle Live2D (le mieux, comme un VTuber).** Un vrai personnage articulé qui respire, cligne, bouge la tête, change d'expression et parle. Dépose dans `frontend/avatar/live2d/` le dossier du modèle (le `.model3.json` avec son `.moc3`, ses textures, et si possible `physics3.json` et ses motions), et à côté le moteur `live2dcubismcore.min.js`, à télécharger sur [le site de Live2D](https://www.live2d.com/en/sdk/download/web/) (dossier `Core` du SDK Cubism for Web ; licence Live2D, non fourni avec l'app). Le serveur trouve le `.model3.json` tout seul. Pour essayer : les modèles d'exemple de Live2D (Hiyori, Haru, Mark…), puis un modèle à toi, acheté (Booth, nizima) ou fait dans Cubism Editor. Si le modèle a des expressions ou des groupes de motions nommés comme les émotions et actions de l'app (`joie`, `triste`, `salut`, `hoche`…), ils sont utilisés ; sinon l'app pilote les paramètres standards de Cubism.
+  2. **Calques PNG.** Dans `frontend/avatar/2d/`, des PNG de même taille, fond transparent : `base.png` (bouche fermée), une bouche par voyelle `bouche_a.png`, `bouche_e.png`, `bouche_i.png`, `bouche_o.png`, `bouche_u.png` (ou, plus simple, `bouche_0.png` à `bouche_3.png` de fermée à grande ouverte), `yeux_fermes.png`, et si tu veux `emotion_joie.png`, `emotion_surprise.png`… (yeux et sourcils par-dessus la base). Pour les faire : une illustration découpée dans Krita (gratuit), exportée calque par calque sur le même canevas.
+  3. **Visage provisoire** dessiné par l'app, quand il n'y a rien.
+
+  **Lip-sync.** Dans les trois cas, la bouche suit la voix d'AllTalk à l'image près : elle s'ouvre avec le volume et prend la forme de la voyelle entendue (a ouvert, i étiré, o et u ronds), estimée dans le navigateur à partir du son lui-même (`frontend/lipsync.js`). Rien à régler, ça s'adapte à n'importe quelle voix. Le VRM de la compagne en profite aussi (visèmes `aa`, `ee`, `ih`, `oh`, `ou`).
 - **Français ou anglais.** Le prof répond dans la langue de l'élève. Pour un cours entier en anglais, mets `stt.language: en` dans `config.yaml` : Whisper est plus fiable quand il connaît la langue.
 
 ### Faire cours sur Teams
@@ -134,6 +139,8 @@ navigateur (127.0.0.1:8765)                    backend local (FastAPI)          
 | `backend/app/teaching.py` | Outils du prof : blocs tableau et recherche, recherche web |
 | `frontend/avatar.js` | Rendu VRM, lip-sync, expressions, gestes, caméra |
 | `frontend/avatar2d.js` | Avatar 2D en calques PNG, même interface que le VRM |
+| `frontend/live2d.js` | Avatar Live2D (modèles `.model3.json`, via pixi-live2d-display) |
+| `frontend/lipsync.js` | Ouverture et voyelle de la bouche à partir du son de la voix |
 | `frontend/board.js` | Tableau blanc : notes au feutre, schémas Mermaid, sources |
 | `frontend/audio.js` | Micro, lecture, messages vocaux, images |
 

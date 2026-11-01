@@ -1,5 +1,6 @@
-// Micro (PCM16 16 kHz vers le serveur), lecture de la voix avec niveau pour le lip-sync,
-// et conversion des messages vocaux.
+// Micro (PCM16 16 kHz vers le serveur), lecture de la voix avec niveau et voyelle pour le
+// lip-sync, et conversion des messages vocaux.
+import { LipSync } from "./lipsync.js";
 
 const WORKLET = `
 class Capture extends AudioWorkletProcessor {
@@ -55,15 +56,24 @@ export class VoicePlayer {
   constructor(onLevel, onIdle) {
     this.ctx = new AudioContext();
     this.analyser = this.ctx.createAnalyser();
-    this.analyser.fftSize = 512;
+    this.analyser.fftSize = 2048; // ~23 Hz par case à 48 kHz : assez fin pour distinguer les voyelles
+    this.analyser.smoothingTimeConstant = 0.3;
     this.analyser.connect(this.ctx.destination);
     this.data = new Float32Array(this.analyser.fftSize);
+    this.spectrum = new Float32Array(this.analyser.frequencyBinCount);
+    this.lipsync = new LipSync(this.ctx.sampleRate, this.analyser.frequencyBinCount);
     this.queue = [];
     this.current = null;
     this.generation = 0;
     this.onLevel = onLevel;
     this.onIdle = onIdle;
-    const loop = () => { this.onLevel(this.level()); requestAnimationFrame(loop); };
+    // onLevel(niveau, bouche) : bouche = { open, width, vowel, weights } calculé par lipsync.js.
+    const loop = () => {
+      const level = this.level();
+      if (level > 0) this.analyser.getFloatFrequencyData(this.spectrum);
+      this.onLevel(level, this.lipsync.update(this.spectrum, level));
+      requestAnimationFrame(loop);
+    };
     loop();
   }
 

@@ -78,5 +78,5 @@ Par ordre d'intérêt, une fois la V1 validée :
 | Le prof voit le tableau | Il corrige ce que l'élève dessine (modèle avec vision) | 1 jour |
 | Tes cours en mémoire | Il s'appuie sur tes PDF et fiches plutôt que sur internet | 2 jours |
 | Voix clonée du prof | Après l'essai A, brancher le moteur gagnant derrière AllTalk ou en direct | 1 jour |
-| Avatar 2D plus vivant | Boucles LivePortrait pré-générées à partir de l'illustration | 1 jour |
+| Bouche calée sur les phonèmes exacts | Aligner le texte sur l'audio sur le pod (Rhubarb Lip Sync) au lieu d'estimer la voyelle dans le navigateur | 1 jour |
 | Vrai participant Teams | Un bot qui rejoint la réunion seul (API Microsoft Graph, Azure) | 1 à 2 semaines |

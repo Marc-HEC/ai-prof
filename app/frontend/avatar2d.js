@@ -1,10 +1,13 @@
-// Avatar 2D anime : calques PNG dont la bouche suit le volume de la voix, comme un VTuber « PNG ».
-// Même interface que avatar.js (load, setMouth, setEmotion, play, setCamera), donc app.js
-// choisit l'un ou l'autre sans rien changer d'autre.
+// Avatar 2D anime en calques PNG, comme un VTuber « PNG » : la bouche prend la forme de la
+// voyelle entendue (a, e, i, o, u) et s'ouvre avec le volume. Pour un vrai modèle animé
+// (Live2D), voir live2d.js. Même interface que avatar.js (load, setMouth, setEmotion, play,
+// setCamera), donc app.js choisit l'un ou l'autre sans rien changer d'autre.
 //
 // Fichiers attendus dans frontend/avatar/2d/, tous de la même taille, fond transparent :
 //   base.png               le personnage, bouche fermée
-//   bouche_0.png … bouche_3.png   de fermée à grande ouverte
+//   bouche_a.png, bouche_e.png, bouche_i.png, bouche_o.png, bouche_u.png
+//                          une bouche par voyelle (le mieux)
+//   ou bouche_0.png … bouche_3.png   de fermée à grande ouverte (plus simple, suit le volume seul)
 //   yeux_fermes.png        paupières, pour le clignement
 //   emotion_<nom>.png      facultatif : yeux et sourcils pour joie, surprise, triste…
 // Sans base.png, un visage provisoire est dessiné pour que tout marche dès le premier lancement.
@@ -27,6 +30,7 @@ export class Avatar {
     this.cameraMode = "buste";
     this.mouth = 0;
     this.mouthTarget = 0;
+    this.shape = { width: 1, vowel: "a" };
     this.emotion = "neutre";
     this.emotionUntil = 0;
     this.blinkUntil = 0;
@@ -45,9 +49,11 @@ export class Avatar {
     const base = await loadImage(`${dir}base.png`);
     if (!base) return; // visage provisoire
     const mouths = await Promise.all([0, 1, 2, 3].map((i) => loadImage(`${dir}bouche_${i}.png`)));
+    const vowels = {};
+    await Promise.all(["a", "e", "i", "o", "u"].map(async (v) => { vowels[v] = await loadImage(`${dir}bouche_${v}.png`); }));
     const emotions = {};
     await Promise.all(EMOTIONS.map(async (e) => { emotions[e] = await loadImage(`${dir}emotion_${e}.png`); }));
-    this.layers = { base, mouths, eyesClosed: await loadImage(`${dir}yeux_fermes.png`), emotions };
+    this.layers = { base, mouths, vowels: Object.values(vowels).some(Boolean) ? vowels : null, eyesClosed: await loadImage(`${dir}yeux_fermes.png`), emotions };
   }
 
   resize() {
@@ -57,7 +63,11 @@ export class Avatar {
     this.canvas.height = el.clientHeight * ratio;
   }
 
-  setMouth(level) { this.mouthTarget = Math.min(1, level); }
+  // shape : { open, width, vowel } calculé par lipsync.js à partir du son.
+  setMouth(level, shape) {
+    this.mouthTarget = Math.min(1, shape ? shape.open * 1.4 : level);
+    if (shape && level > 0.06) this.shape = shape;
+  }
 
   setEmotion(name) {
     this.emotion = EMOTIONS.includes(name) ? name : "neutre";
@@ -101,14 +111,16 @@ export class Avatar {
   }
 
   drawSprites(g, size, blinking) {
-    const { base, mouths, eyesClosed, emotions } = this.layers;
+    const { base, mouths, vowels, eyesClosed, emotions } = this.layers;
     const w = size * (base.width / Math.max(base.width, base.height));
     const h = size * (base.height / Math.max(base.width, base.height));
     const at = (img) => img && g.drawImage(img, -w / 2, -h, w, h);
     at(base);
     at(emotions[this.emotion]);
     const index = this.mouth < 0.08 ? 0 : this.mouth < 0.3 ? 1 : this.mouth < 0.6 ? 2 : 3;
-    at(mouths[index] ?? mouths.find(Boolean));
+    // Bouche fermée : bouche_0 (ou rien, si la base a déjà la bouche fermée).
+    if (vowels && index > 0) at(vowels[this.shape.vowel] ?? vowels.a ?? Object.values(vowels).find(Boolean));
+    else at(mouths[index] ?? (index === 0 ? null : mouths.find(Boolean)));
     if (blinking) at(eyesClosed);
   }
 
@@ -162,15 +174,20 @@ export class Avatar {
       g.fillStyle = "rgba(255,120,140,.35)";
       for (const side of [-1, 1]) { g.beginPath(); g.ellipse(side * s * 0.12, -s * 0.43, s * 0.03, s * 0.015, 0, 0, Math.PI * 2); g.fill(); }
     }
-    // bouche : s'ouvre avec la voix
-    const open = this.mouth * s * 0.045;
+    // bouche : s'ouvre avec la voix et prend la forme de la voyelle (étirée pour i, ronde pour o, u)
+    const open = this.mouth * s * 0.05;
+    const half = s * 0.03 * this.shape.width;
     g.fillStyle = "#b8455c";
     g.beginPath();
     if (open < s * 0.004) {
       const smile = e === "triste" ? -1 : 1;
       g.moveTo(-s * 0.03, -s * 0.37); g.quadraticCurveTo(0, -s * 0.37 + smile * s * 0.015, s * 0.03, -s * 0.37); g.stroke();
     } else {
-      g.ellipse(0, -s * 0.365, s * 0.028, open, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+      g.ellipse(0, -s * 0.365, half, open, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+      if (open > s * 0.015) { // langue au fond quand la bouche est bien ouverte
+        g.fillStyle = "#e07a8a";
+        g.beginPath(); g.ellipse(0, -s * 0.365 + open * 0.55, half * 0.6, open * 0.35, 0, 0, Math.PI * 2); g.fill();
+      }
     }
   }
 }

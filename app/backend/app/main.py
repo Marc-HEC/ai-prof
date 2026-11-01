@@ -18,6 +18,14 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 FRONTEND = BASE_DIR.parent / "frontend"
 
 
+def find_live2d(frontend: Path = FRONTEND) -> dict:
+    """Modèle Live2D déposé dans frontend/avatar/live2d/, s'il y en a un, et présence du moteur Cubism."""
+    root = frontend / "avatar" / "live2d"
+    models = sorted(root.rglob("*.model3.json")) if root.is_dir() else []
+    return {"live2d": models[0].relative_to(frontend).as_posix() if models else None,
+            "live2d_core": (root / "live2dcubismcore.min.js").is_file()}
+
+
 def create_app(deps: Deps | None = None, persona_path: str | None = None) -> FastAPI:
     if deps is None:
         cfg = load_config()
@@ -31,7 +39,7 @@ def create_app(deps: Deps | None = None, persona_path: str | None = None) -> Fas
     @app.get("/api/info")
     async def info():
         # Lu par le navigateur avant de créer l'avatar : VRM ou 2D, tableau ou non.
-        return {**deps.persona.public(),
+        return {**deps.persona.public(), **find_live2d(),
                 "recherche_web": "recherche_web" in deps.persona.outils and deps.cfg.recherche_web.enabled}
 
     @app.websocket("/ws")

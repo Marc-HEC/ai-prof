@@ -6,14 +6,17 @@ const $ = (id) => document.getElementById(id);
 
 // La fiche choisie au lancement décide de l'avatar (VRM ou 2D) et des outils (tableau).
 const info = await fetch("/api/info").then((r) => r.json()).catch(() => ({ avatar: "vrm", outils: [] }));
-const { Avatar } = info.avatar === "2d" ? await import("./avatar2d.js") : await import("./avatar.js");
-const avatar = new Avatar($("scene"));
+// En 2D : modèle Live2D s'il y en a un dans avatar/live2d/, sinon calques PNG (avatar/2d/).
+const live2d = info.avatar === "2d" && info.live2d && info.live2d_core;
+const module = live2d ? "./live2d.js" : info.avatar === "2d" ? "./avatar2d.js" : "./avatar.js";
+const { Avatar } = await import(module);
+let avatar = new Avatar($("scene"));
 window.avatar = avatar; // pratique pour tester dans la console
 const board = new Board($("board"));
 let charName = info.name || "Elle";
 if (info.name) { $("name").textContent = info.name; document.title = info.name; }
 if (info.outils?.includes("tableau")) { board.show(); $("visio").hidden = false; }
-if (info.avatar === "2d") $("cam").hidden = true;
+if (info.avatar === "2d" && !live2d) $("cam").hidden = true;
 let currentReply = null;
 
 const STATUS = { idle: "En ligne", listening: "T'écoute…", thinking: "Réfléchit…", speaking: "Parle", offline: "Hors ligne" };
@@ -22,10 +25,28 @@ function setStatus(state) {
   $("status").textContent = STATUS[state];
 }
 
-const player = new VoicePlayer((lvl) => avatar.setMouth(lvl), () => setStatus("idle"));
+const player = new VoicePlayer((lvl, mouth) => avatar.setMouth(lvl, mouth), () => setStatus("idle"));
 
-if (info.avatar === "2d") avatar.load("avatar/2d/");
-else avatar.load("avatar/model.vrm").catch(() => { $("avatar-missing").hidden = false; });
+function avatarHint(html) { $("avatar-missing").innerHTML = html; $("avatar-missing").hidden = false; }
+if (live2d) {
+  avatar.load(info.live2d).catch(async (e) => {
+    // Modèle illisible : on repasse aux calques PNG pour que le prof parle quand même.
+    console.error(e);
+    avatarHint(`Modèle Live2D illisible (${e.message}). Avatar PNG utilisé à la place.`);
+    const fresh = document.createElement("canvas");
+    fresh.id = "scene";
+    $("scene").replaceWith(fresh);
+    avatar = new (await import("./avatar2d.js")).Avatar(fresh);
+    window.avatar = avatar;
+    avatar.load("avatar/2d/");
+  });
+} else if (info.avatar === "2d") {
+  if (info.live2d) avatarHint("Modèle Live2D trouvé, mais il manque <code>avatar/live2d/live2dcubismcore.min.js</code>.");
+  avatar.load("avatar/2d/");
+}
+else avatar.load("avatar/model.vrm").catch(() => {
+  avatarHint("Pas d'avatar : dépose <code>frontend/avatar/model.vrm</code>, ou lance le prof avec <code>--persona persona/prof.yaml</code>.");
+});
 
 // --- chat ---------------------------------------------------------------------
 function addMessage(kind, who, text, image) {

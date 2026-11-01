@@ -200,5 +200,17 @@ def test_info_endpoint_tells_the_browser_which_avatar_and_tools(tmp_path):
     deps = Deps(cfg=cfg, persona=Persona.load(ROOT / "persona" / "prof.yaml"),
                 memory=Memory(tmp_path / "m.db", cfg.memory))
     info = TestClient(create_app(deps)).get("/api/info").json()
+    info.pop("live2d"), info.pop("live2d_core")  # dépendent de ce qui est déposé dans frontend/
     assert info == {"name": "Sora", "role": "prof", "outils": ["tableau", "recherche_web"],
                     "avatar": "2d", "recherche_web": False}
+
+
+def test_live2d_model_is_found_in_any_subfolder(tmp_path):
+    from app.main import find_live2d
+
+    assert find_live2d(tmp_path) == {"live2d": None, "live2d_core": False}
+    model = tmp_path / "avatar" / "live2d" / "hiyori" / "Hiyori.model3.json"
+    model.parent.mkdir(parents=True)
+    model.write_text("{}")
+    (tmp_path / "avatar" / "live2d" / "live2dcubismcore.min.js").write_text("")
+    assert find_live2d(tmp_path) == {"live2d": "avatar/live2d/hiyori/Hiyori.model3.json", "live2d_core": True}

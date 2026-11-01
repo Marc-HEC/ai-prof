@@ -73,7 +73,11 @@ export class Avatar {
     this.camera.updateProjectionMatrix();
   }
 
-  setMouth(level) { this.mouthTarget = Math.min(1, level); }
+  // shape : voyelle estimée par lipsync.js, pour les visèmes VRM aa, ee, ih, oh, ou.
+  setMouth(level, shape) {
+    this.mouthTarget = Math.min(1, level);
+    if (shape) this.vowels = shape.weights;
+  }
 
   setEmotion(name) {
     this.emotion = EMOTIONS[name] ?? null;
@@ -124,8 +128,10 @@ export class Avatar {
       this.pose(t);
       const em = this.vrm.expressionManager;
       this.mouth += (this.mouthTarget - this.mouth) * Math.min(1, dt * 18);
-      em.setValue("aa", this.mouth * 0.9);
-      em.setValue("oh", this.mouth * 0.25);
+      const w = this.vowels ?? { a: 1, e: 0, i: 0, o: 0.3, u: 0 };
+      for (const [preset, v] of [["aa", "a"], ["ee", "e"], ["ih", "i"], ["oh", "o"], ["ou", "u"]]) {
+        em.setValue(preset, this.mouth * Math.min(1, w[v] * 1.2));
+      }
       if (t > this.nextBlink) this.nextBlink = t + 2 + Math.random() * 4;
       const blink = Math.max(0, 1 - Math.abs(this.nextBlink - t - 0.08) / 0.08);
       em.setValue("blink", blink);

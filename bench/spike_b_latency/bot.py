@@ -113,7 +113,7 @@ async def run(args: argparse.Namespace) -> int:
     from pipecat.pipeline.runner import PipelineRunner
     from pipecat.pipeline.task import PipelineParams, PipelineTask
     from pipecat.processors.aggregators.llm_context import LLMContext
-    from pipecat.processors.aggregators.llm_response import LLMContextAggregatorPair
+    from pipecat.processors.aggregators.llm_response_universal import LLMContextAggregatorPair
     from pipecat.services.ollama.llm import OLLamaLLMService
     from pipecat.services.whisper.stt import WhisperSTTService
     from pipecat.transports.base_transport import TransportParams

@@ -180,3 +180,52 @@ et aucune de ses difficultes n'est sur le chemin critique.
 
 Les phases conservees sont : boucle vocale, persona et memoire, avatar et
 lip-sync, animations corps entier, chat enrichi.
+
+---
+
+## D9 - La V1 est orchestree sur le laptop, pas sur le pod
+
+**Decide.**
+
+L'architecture cible (section 2.5 de [architecture.md](architecture.md)) place
+Pipecat sur le pod, joint par WebRTC a travers Tailscale, avec des conteneurs
+Docker. Deux contraintes de RunPod la rendent difficile a monter tout de suite :
+un pod RunPod est deja un conteneur et ne lance pas Docker a l'interieur, et il
+n'expose que des ports TCP, alors que le media WebRTC passe en UDP.
+
+La V1 ([`app/`](../app/README.md)) inverse donc l'orchestration : un petit
+serveur FastAPI sur le laptop gere la detection de parole, la coupure, le
+decoupage en phrases et la memoire, et appelle trois services du pod par un
+tunnel SSH, tous au format OpenAI : KoboldCpp (LLM et Whisper) et AllTalk (voix).
+Le navigateur ne parle qu'au laptop, en WebSocket.
+
+Cout de ce choix : un aller-retour reseau par phrase pour la voix, et une
+detection de fin de tour par silence (WebRTC VAD) plutot que SmartTurn. A
+mesurer par l'essai B avant de decider s'il faut revenir a l'architecture cible.
+
+**Revenir dessus si** : la latence mesuree depasse les seuils de D4, ou si le
+calcul passe sur une machine possedee (scenario 4.2), ou Docker et l'UDP sont
+disponibles.
+
+---
+
+## D10 - Le prof est une persona avec des outils, pas un second projet
+
+**Decide.**
+
+Le prof partage avec la compagne tout ce qui est difficile : voix continue,
+coupure de parole, memoire, avatar, chat. Il ne differe que par ses consignes
+(`role: prof`) et deux outils : le tableau blanc et la recherche web.
+
+Les outils passent par des blocs dans le texte du LLM (`<tableau>...</tableau>`,
+`<recherche>...</recherche>`), comme les balises d'emotion de D7, et non par
+l'appel de fonctions natif : KoboldCpp le gere mal et un petit modele le rate
+souvent, alors qu'un bloc de texte marche avec n'importe quel modele.
+
+La recherche web est la seule sortie vers un tiers de tout le systeme. Elle est
+donc desactivee par defaut (`recherche_web.enabled: false`) et ne s'active que
+pour une persona qui la declare.
+
+**Revenir dessus si** : le LLM retenu gere bien l'appel de fonctions, ou si le
+prof a besoin d'outils dont la sortie doit etre structuree (exercices notes,
+graphes de fonctions).

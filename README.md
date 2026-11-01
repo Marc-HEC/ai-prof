@@ -1,25 +1,38 @@
-# Compagne IA conversationnelle auto-hebergee
+# Compagne IA et prof IA, auto-heberges
 
-Systeme de conversation vocale temps reel avec avatar 3D, LLM local, et voix
-clonee en francais. Tout le calcul tourne sur du materiel que l'on choisit ;
-l'historique des conversations ne quitte jamais la machine de l'utilisateur.
+Systeme de conversation vocale temps reel avec avatar, LLM local et memoire,
+en francais. Le meme code fait une compagne dans l'esprit de Replika ou
+Otherhalf, et un prof en visio avec tableau blanc et recherche web. Le calcul
+lourd tourne sur un GPU loue (RunPod) ; l'historique et la memoire restent sur
+la machine de l'utilisateur.
 
-## Etat : phase 0, validation
+## Etat
 
-Rien n'est encore construit. Deux essais instrumentes valident d'abord les deux
-risques capables de tuer le projet, parce qu'aucun document d'architecture ne
-les reduit :
+**Utilisable : l'app V1, dans [`app/`](app/README.md).** Interface web, memoire
+et avatar sur le PC ; LLM, Whisper et voix sur le pod RunPod, par tunnel SSH.
+
+- Compagne : voix continue avec coupure de parole, chat avec images et messages
+  vocaux, avatar VRM, memoire avec oubli progressif, personnalite qui evolue.
+- Prof : la meme app avec `--persona persona/prof.yaml`. Tableau blanc (notes
+  au feutre et schemas), recherche web (desactivee par defaut), avatar 2D anime,
+  mode visio a partager dans Teams.
+
+**En cours : la phase 0**, qui mesure deux risques avant d'aller plus loin que
+la V1 :
 
 - **la fidelite du clone vocal en francais**, mesuree et non supposee ;
 - **la latence bout-en-bout**, mesuree etage par etage.
 
-La suite ne demarre que si [`bench/decide.py`](bench/decide.py) donne un feu
-vert sur des seuils fixes a l'avance.
+La suite (voix clonee, latence garantie) ne demarre que si
+[`bench/decide.py`](bench/decide.py) donne un feu vert sur des seuils fixes a
+l'avance. Ce qu'il reste a faire, dans l'ordre : [docs/suite.md](docs/suite.md).
 
 ## Par ou commencer
 
 | Vous voulez | Lire |
 |---|---|
+| Lancer la compagne ou le prof | [app/README.md](app/README.md) |
+| Savoir quoi faire ensuite | [docs/suite.md](docs/suite.md) |
 | Comprendre le systeme cible | [docs/architecture.md](docs/architecture.md) |
 | Savoir pourquoi tel choix | [docs/decisions.md](docs/decisions.md) |
 | Enregistrer la voix | [tools/record_script_fr.md](tools/record_script_fr.md) |

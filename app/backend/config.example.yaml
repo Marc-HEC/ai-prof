@@ -1,0 +1,38 @@
+# Copie ce fichier en config.yaml. Les adresses 127.0.0.1 passent par le tunnel SSH vers RunPod.
+persona: persona/exemple.yaml
+
+llm:                       # KoboldCpp sur le pod
+  base_url: http://127.0.0.1:5001/v1
+  model: koboldcpp
+  temperature: 0.9
+  max_tokens: 300
+  history_turns: 20        # échanges gardés tels quels dans le contexte
+
+stt:                       # Whisper intégré à KoboldCpp
+  base_url: http://127.0.0.1:5001/v1
+  language: fr
+
+tts:                       # AllTalk v2 sur le pod
+  base_url: http://127.0.0.1:7851/v1
+  voice: voix.wav          # nom du fichier dans alltalk_tts/voices/
+  response_format: wav
+
+vad:
+  aggressiveness: 2
+  end_silence_ms: 500      # baisse à 400 pour plus de réactivité, monte si elle te coupe
+  barge_in_ms: 300
+
+memory:
+  db_path: data/memoire.db
+  reflect_every_turns: 12
+  half_life_days: 30
+  journal_after_hours: 6
+
+recherche_web:             # seulement pour le prof (persona/prof.yaml)
+  enabled: false           # true = la question part chez DuckDuckGo et ton PC visite les pages trouvées
+  region: fr-fr
+  pages: 3
+
+server:
+  host: 127.0.0.1          # ne mets jamais 0.0.0.0
+  port: 8765

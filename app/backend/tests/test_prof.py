@@ -200,7 +200,8 @@ def test_info_endpoint_tells_the_browser_which_avatar_and_tools(tmp_path):
     deps = Deps(cfg=cfg, persona=Persona.load(ROOT / "persona" / "prof.yaml"),
                 memory=Memory(tmp_path / "m.db", cfg.memory))
     info = TestClient(create_app(deps)).get("/api/info").json()
-    info.pop("live2d"), info.pop("live2d_core")  # dépendent de ce qui est déposé dans frontend/
+    for key in ("live2d", "live2d_core", "animations", "tenues"):  # dépendent de ce qui est déposé dans frontend/
+        info.pop(key)
     assert info == {"name": "Sora", "role": "prof", "outils": ["tableau", "recherche_web"],
                     "avatar": "2d", "recherche_web": False}
 
@@ -214,3 +215,32 @@ def test_live2d_model_is_found_in_any_subfolder(tmp_path):
     model.write_text("{}")
     (tmp_path / "avatar" / "live2d" / "live2dcubismcore.min.js").write_text("")
     assert find_live2d(tmp_path) == {"live2d": "avatar/live2d/hiyori/Hiyori.model3.json", "live2d_core": True}
+
+
+def test_outfits_are_found_and_offered_to_the_model(tmp_path):
+    from app.main import find_outfits
+    from datetime import datetime
+
+    from app.persona import DEFAULT_STATE
+    from app.text import extract_tags
+
+    folder = tmp_path / "avatar" / "tenues"
+    folder.mkdir(parents=True)
+    for name in ("tailleur", "sport", "pyjama"):
+        (folder / f"{name}.vrm").write_bytes(b"")
+    (folder / "notes.txt").write_text("")
+    assert find_outfits(tmp_path) == ["pyjama", "sport", "tailleur"]
+
+    from app.main import find_animations
+    (tmp_path / "animations").mkdir()
+    for name in ("danse.fbx", "danse.vrma", "marche.fbx", "lisezmoi.txt"):
+        (tmp_path / "animations" / name).write_bytes(b"")
+    assert find_animations(tmp_path) == {"danse": "animations/danse.vrma", "marche": "animations/marche.fbx"}
+
+    persona = Persona.load(ROOT / "persona" / "prof.yaml")
+    assert "[tenue:" not in build_system_prompt(persona, dict(DEFAULT_STATE), [], [], None, datetime.now(), None)
+    persona.tenues = find_outfits(tmp_path)
+    assert "[tenue:X] pour changer de vêtements, avec X parmi pyjama, sport, tailleur" in \
+        build_system_prompt(persona, dict(DEFAULT_STATE), [], [], None, datetime.now(), None)
+    clean, tags = extract_tags("[tenue:sport] On va courir ?")
+    assert clean == "On va courir ?" and tags == [{"type": "tenue", "value": "sport"}]

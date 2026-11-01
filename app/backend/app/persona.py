@@ -10,7 +10,8 @@ import yaml
 JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
 
 EMOTIONS = ["joie", "tendresse", "taquine", "surprise", "triste", "agacee", "neutre"]
-ACTIONS = ["salut", "hoche", "rire", "reflechit", "se_lever", "s_asseoir", "danse", "etirement"]
+ACTIONS = ["salut", "hoche", "rire", "reflechit", "se_lever", "s_asseoir", "danse", "etirement",
+           "marche", "pointe", "explique", "applaudit", "s_incline", "bras_croises", "saute", "tourne"]
 CAMERAS = ["buste", "plein_pied"]
 
 
@@ -29,10 +30,12 @@ class Persona:
     outils: list[str] = field(default_factory=list)  # tableau, recherche_web
     avatar: str = "vrm"             # vrm | 2d
     memoire: str = ""               # fichier de mémoire propre à ce personnage, sinon celui de config.yaml
+    tenues: list[str] = field(default_factory=list)  # noms des VRM de frontend/avatar/tenues/, trouvés au lancement
 
     def public(self) -> dict:
         """Ce que le navigateur a besoin de savoir pour se configurer."""
-        return {"name": self.name, "role": self.role, "outils": list(self.outils), "avatar": self.avatar}
+        return {"name": self.name, "role": self.role, "outils": list(self.outils), "avatar": self.avatar,
+                "tenues": list(self.tenues)}
 
     @classmethod
     def load(cls, path: Path) -> "Persona":
@@ -140,8 +143,9 @@ def build_system_prompt(p: Persona, state: dict, memories: list[str], facts: lis
         "- Tu peux ajouter au début de ta réponse des balises invisibles pour ton corps :\n"
         f"  [emotion:X] avec X parmi {', '.join(EMOTIONS)};\n"
         f"  [action:X] avec X parmi {', '.join(ACTIONS)};\n"
-        f"  [camera:X] avec X parmi {', '.join(CAMERAS)}.\n"
-        "  Utilise-les avec parcimonie, seulement quand ça a du sens."
+        f"  [camera:X] avec X parmi {', '.join(CAMERAS)}"
+        + (f";\n  [tenue:X] pour changer de vêtements, avec X parmi {', '.join(p.tenues)}.\n" if len(p.tenues) > 1 else ".\n")
+        + "  Utilise-les avec parcimonie, seulement quand ça a du sens."
     )
     if tools_prompt:
         parts.append(tools_prompt)

@@ -4,7 +4,7 @@ name: Sora
 age: 29
 language: fr
 role: prof
-avatar: 2d                 # avatar anime en calques PNG, voir frontend/avatar/2d/
+avatar: 2d                 # 2d (Live2D ou calques PNG) ou vrm (corps entier, gestes et tenues), voir README
 outils: [tableau, recherche_web]   # la recherche ne marche que si recherche_web.enabled est vrai dans config.yaml
 user_name: l'élève
 memoire: data/prof.db      # mémoire séparée de celle de la compagne

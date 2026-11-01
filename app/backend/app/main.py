@@ -26,6 +26,19 @@ def find_live2d(frontend: Path = FRONTEND) -> dict:
             "live2d_core": (root / "live2dcubismcore.min.js").is_file()}
 
 
+def find_outfits(frontend: Path = FRONTEND) -> list[str]:
+    """Tenues = un VRM par tenue dans frontend/avatar/tenues/ ; le nom du fichier est le nom de la tenue."""
+    root = frontend / "avatar" / "tenues"
+    return sorted(f.stem for f in root.glob("*.vrm")) if root.is_dir() else []
+
+
+def find_animations(frontend: Path = FRONTEND) -> dict[str, str]:
+    """Gestes enregistrés : nom -> fichier, .vrma prioritaire sur .fbx (Mixamo)."""
+    root = frontend / "animations"
+    files = sorted(root.glob("*.fbx")) + sorted(root.glob("*.vrma")) if root.is_dir() else []
+    return {f.stem: f"animations/{f.name}" for f in files}
+
+
 def create_app(deps: Deps | None = None, persona_path: str | None = None) -> FastAPI:
     if deps is None:
         cfg = load_config()
@@ -34,12 +47,14 @@ def create_app(deps: Deps | None = None, persona_path: str | None = None) -> Fas
         db_path = resolve(persona.memoire or cfg.memory.db_path)
         deps = Deps(cfg=cfg, persona=persona,
                     memory=Memory(db_path, cfg.memory, Embedder(cfg.memory.embed_model)))
+    if not deps.persona.tenues:
+        deps.persona.tenues = find_outfits()
     app = FastAPI(title="Compagne", docs_url=None, redoc_url=None, openapi_url=None)
 
     @app.get("/api/info")
     async def info():
         # Lu par le navigateur avant de créer l'avatar : VRM ou 2D, tableau ou non.
-        return {**deps.persona.public(), **find_live2d(),
+        return {**deps.persona.public(), **find_live2d(), "animations": find_animations(),
                 "recherche_web": "recherche_web" in deps.persona.outils and deps.cfg.recherche_web.enabled}
 
     @app.websocket("/ws")

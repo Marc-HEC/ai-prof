@@ -12,12 +12,14 @@ const module = live2d ? "./live2d.js" : info.avatar === "2d" ? "./avatar2d.js" :
 const { Avatar } = await import(module);
 let avatar = new Avatar($("scene"));
 window.avatar = avatar; // pratique pour tester dans la console
+avatar.animations = info.animations ?? {};
 const board = new Board($("board"));
 let charName = info.name || "Elle";
 if (info.name) { $("name").textContent = info.name; document.title = info.name; }
 if (info.outils?.includes("tableau")) { board.show(); $("visio").hidden = false; }
 if (info.avatar === "2d" && !live2d) $("cam").hidden = true;
 let currentReply = null;
+const tenues = info.tenues ?? [];
 
 const STATUS = { idle: "En ligne", listening: "T'écoute…", thinking: "Réfléchit…", speaking: "Parle", offline: "Hors ligne" };
 function setStatus(state) {
@@ -44,9 +46,28 @@ if (live2d) {
   if (info.live2d) avatarHint("Modèle Live2D trouvé, mais il manque <code>avatar/live2d/live2dcubismcore.min.js</code>.");
   avatar.load("avatar/2d/");
 }
-else avatar.load("avatar/model.vrm").catch(() => {
-  avatarHint("Pas d'avatar : dépose <code>frontend/avatar/model.vrm</code>, ou lance le prof avec <code>--persona persona/prof.yaml</code>.");
+else avatar.load("avatar/model.vrm").catch(async () => {
+  // Pas de model.vrm : la première tenue sert d'avatar par défaut.
+  if (tenues.length) return setOutfit(tenues[0]);
+  avatarHint("Pas d'avatar : dépose <code>frontend/avatar/model.vrm</code> (ou des tenues dans <code>avatar/tenues/</code>), ou lance le prof avec <code>--persona persona/prof.yaml</code>.");
 });
+
+// --- tenues (VRM seulement) : un fichier par tenue dans avatar/tenues/ ----------------------
+let outfitReady = Promise.resolve();
+async function setOutfit(name) {
+  // Le modèle écrit la balise en minuscules ; le fichier garde son nom d'origine.
+  const file = tenues.find((t) => t.toLowerCase() === String(name).toLowerCase());
+  if (!avatar.setOutfit || !file) return;
+  try {
+    await avatar.setOutfit(file);
+    $("outfit").value = file;
+  } catch (e) { addMessage("system", null, `Tenue « ${file} » illisible : ${e.message}`); }
+}
+if (info.avatar !== "2d" && tenues.length > 1) {
+  $("outfit").replaceChildren(...tenues.map((t) => new Option(t.replaceAll("_", " "), t)));
+  $("outfit-box").hidden = false;
+  $("outfit").onchange = () => setOutfit($("outfit").value);
+}
 
 // --- chat ---------------------------------------------------------------------
 function addMessage(kind, who, text, image) {
@@ -106,9 +127,11 @@ function handle(m) {
       break;
     case "tag":
       if (m.kind === "emotion") avatar.setEmotion(m.value);
-      if (m.kind === "action") avatar.play(m.value);
+      // Un geste attend la fin d'un changement de tenue demandé juste avant.
+      if (m.kind === "action") outfitReady.then(() => avatar.play(m.value));
       if (m.kind === "camera") setCamera(m.value);
       if (m.kind === "tableau" && m.value === "effacer") board.clear();
+      if (m.kind === "tenue") outfitReady = setOutfit(m.value);
       break;
     case "board":
     case "search":

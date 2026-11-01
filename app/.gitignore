@@ -6,6 +6,8 @@ __pycache__/
 frontend/node_modules/
 frontend/avatar/*.vrm
 frontend/animations/*.vrma
+frontend/animations/*.fbx
+frontend/avatar/tenues/*.vrm
 frontend/avatar/2d/*.png
 frontend/avatar/live2d/*
 !frontend/avatar/live2d/.gitkeep

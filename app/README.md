@@ -69,6 +69,9 @@ Puis **http://127.0.0.1:8765**. L'écran passe en trois colonnes : l'avatar, le 
   3. **Visage provisoire** dessiné par l'app, quand il n'y a rien.
 
   **Lip-sync.** Dans les trois cas, la bouche suit la voix d'AllTalk à l'image près : elle s'ouvre avec le volume et prend la forme de la voyelle entendue (a ouvert, i étiré, o et u ronds), estimée dans le navigateur à partir du son lui-même (`frontend/lipsync.js`). Rien à régler, ça s'adapte à n'importe quelle voix. Le VRM de la compagne en profite aussi (visèmes `aa`, `ee`, `ih`, `oh`, `ou`).
+- **Avatar VRM corps entier, gestes et tenues.** Mets `avatar: vrm` dans la fiche (le prof comme la compagne) pour un personnage 3D au rendu anime, qui bouge tout le corps :
+  - **Tenues.** Un VRM par tenue dans `frontend/avatar/tenues/`, par exemple `tailleur.vrm`, `sport.vrm`, `pyjama.vrm` : le même personnage exporté de VRoid Studio avec des vêtements différents. Le nom du fichier est le nom de la tenue. Le personnage en change seul avec `[tenue:sport]`, et un menu sous l'avatar permet de choisir. Sans `avatar/model.vrm`, la première tenue sert d'avatar.
+  - **Gestes.** `salut`, `hoche`, `rire`, `reflechit`, `danse`, `etirement`, `marche` (traverse la scène et revient), `pointe` (montre le tableau), `explique`, `applaudit`, `bras_croises`, `s_incline`, `saute`, `tourne`. Chacun a un mouvement procédural de secours ; pour un mouvement plus naturel, dépose une animation du même nom dans `frontend/animations/` : `danse.vrma`, ou directement un `.fbx` de [Mixamo](https://www.mixamo.com) (« Download », FBX, « Without Skin », et « In Place » pour la marche), adapté au squelette VRM au chargement. `repos.fbx` ou `repos.vrma`, s'il existe, tourne en boucle quand le personnage ne fait rien. En parlant, il bouge aussi un peu les mains et la tête.
 - **Français ou anglais.** Le prof répond dans la langue de l'élève. Pour un cours entier en anglais, mets `stt.language: en` dans `config.yaml` : Whisper est plus fiable quand il connaît la langue.
 
 ### Faire cours sur Teams
@@ -95,7 +98,7 @@ Sans fichier d'animation, les gestes sont procéduraux (salut, hoche, rire, réf
 - en exporter depuis VRM Posing Desktop ;
 - ou enregistrer ta propre capture de mouvement.
 
-Les actions disponibles sont dans `backend/app/persona.py` (`ACTIONS`). Si tu en ajoutes une, ajoute aussi son geste dans `frontend/avatar.js`, ou un fichier `.vrma` du même nom.
+Les actions disponibles sont dans `backend/app/persona.py` (`ACTIONS`). Si tu en ajoutes une, ajoute aussi son geste dans `frontend/avatar.js`, ou un fichier `.vrma` ou `.fbx` (Mixamo) du même nom dans `frontend/animations/`.
 
 ## Réglages utiles (`config.yaml`)
 
@@ -140,6 +143,7 @@ navigateur (127.0.0.1:8765)                    backend local (FastAPI)          
 | `frontend/avatar.js` | Rendu VRM, lip-sync, expressions, gestes, caméra |
 | `frontend/avatar2d.js` | Avatar 2D en calques PNG, même interface que le VRM |
 | `frontend/live2d.js` | Avatar Live2D (modèles `.model3.json`, via pixi-live2d-display) |
+| `frontend/mixamo.js` | Animations Mixamo (.fbx) adaptées au squelette VRM |
 | `frontend/lipsync.js` | Ouverture et voyelle de la bouche à partir du son de la voix |
 | `frontend/board.js` | Tableau blanc : notes au feutre, schémas Mermaid, sources |
 | `frontend/audio.js` | Micro, lecture, messages vocaux, images |
